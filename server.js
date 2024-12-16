@@ -210,6 +210,25 @@ app.put('/update-progress', async (req, res) => {
     }
 });
 
+// Update time_taken for a player in the scoreboard
+app.put('/update-time-taken', async (req, res) => {
+    const { roomCode, playerName, timeTaken } = req.body;
+    try {
+        const result = await pool.query(
+            `UPDATE scoreboard
+             SET time_taken = $1
+             WHERE room_code = $2 AND player_name = $3
+             RETURNING *`,
+            [timeTaken, roomCode, playerName]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
 // fetch scoreBoard
 app.get('/scoreboard/:roomCode', async (req, res) => {
     const { roomCode } = req.params;
