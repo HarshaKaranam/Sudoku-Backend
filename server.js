@@ -26,6 +26,9 @@ const pool = new Pool({
     database: process.env.DB_NAME,
     password: process.env.DB_PASSWORD,
     port: process.env.DB_PORT,
+    ssl: {
+        rejectUnauthorized: false, // This ensures SSL is enabled for the connection
+    },
 });
 
 // Get a puzzle by difficulty
