@@ -26,9 +26,6 @@ const pool = new Pool({
     database: process.env.DB_NAME,
     password: process.env.DB_PASSWORD,
     port: process.env.DB_PORT,
-    ssl: {
-        rejectUnauthorized: false, // This ensures SSL is enabled for the connection
-    },
 });
 
 // Get a puzzle by difficulty
@@ -71,30 +68,18 @@ app.get('/puzzle/id/:id', async (req, res) => {
 });
 
 
-// Get leaderboard for a puzzle
-app.get('/leaderboard/:id', async (req, res) => {
-    try {
-        const { puzzleId } = req.params;
-        const result = await pool.query(
-            'SELECT player_name, completion_time FROM leaderboard WHERE id = $1 ORDER BY completion_time ASC LIMIT 10',
-            [id]
-        );
-        res.json(result.rows);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
 
 // Add a player to the leaderboard
 app.post('/leaderboard', async (req, res) => {
     try {
-        const { puzzleId, playerName, completionTime } = req.body;
+        const { id, playerName, completionTime, completionDate } = req.body; // Puzzle code
         const result = await pool.query(
-            'INSERT INTO leaderboard (id, player_name, completion_time) VALUES ($1, $2, $3) RETURNING *',
-            [id, playerName, completionTime]
+            `INSERT INTO leaderboard (id, player_name, completion_time, completion_date)
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
+            [id, playerName, completionTime, completionDate]
         );
-        res.json(result.rows[0]);
+        res.json(result.rows[0]); // Return the inserted record
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -243,6 +228,31 @@ app.get('/scoreboard/:roomCode', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+// Get leaderboard for a puzzle
+app.get('/leaderboard/:id', async (req, res) => {
+    try {
+        const { id } = req.params; // Puzzle code
+        const result = await pool.query(
+            `SELECT player_name, completion_time
+             FROM leaderboard
+             WHERE id = $1
+             ORDER BY completion_time ASC
+             LIMIT 10`,
+            [id]
+        );
+	if (result.rows.length === 0) {
+            // Return an empty array if no data is found
+            return res.json([]);
+        }
+        res.json(result.rows); // Return top 10 players for the specified puzzle
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
 
 
 // Start the server
